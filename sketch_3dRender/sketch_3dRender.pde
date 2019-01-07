@@ -39,16 +39,20 @@ float vertCount = 0;
 void setup() {
   size(displayWidth, displayHeight);
   setupTriData();
-  PVector translate = new PVector(-1, -3, 3);
+  
+  PVector translate = new PVector(-0.5, -0.5, -0.5);
   translateCube(translate);
+  moveToSpot();
   background(BLACK);
 }
 
 void draw() {
   background(BLACK);
   vertCount += 0.02;
-  //testRotate();
-  translateCube(new PVector( cos(vertCount) * 0.05, sin(vertCount) * 0.05, 0));
+  moveToOrigin();
+  testRotate();
+  moveToSpot();
+  //translateCube(new PVector( cos(vertCount) * 0.05, sin(vertCount) * 0.05, 0));
   //Draw points
   for (int i = 0; i < vertices.length; i++) {
    PVector projectedVector = project(vertices[i]);
@@ -75,9 +79,9 @@ void setupTriData() {
 }
 
 void testRotate() {
-  float theta = radians(0.1);
+  float theta = radians(0.5);
   for (int i = 0; i < vertices.length; i++) {
-    vertices[i].y = (vertices[i].y * sin(theta)) + (vertices[i].y * cos(theta));
+    vertices[i].y = (vertices[i].x * sin(theta)) + (vertices[i].y * cos(theta));
     vertices[i].x = (vertices[i].x * cos(theta)) - (vertices[i].y * sin(theta));
   }
 }
@@ -103,6 +107,16 @@ void translateCube(PVector vector) {
   for (int i = 0; i < vertices.length; i++) {
     vertices[i].add(vector);
   }
+}
+
+void moveToOrigin() {
+  PVector translate = new PVector(1, 1, -3);
+  translateCube(translate);
+}
+
+void moveToSpot() {
+  PVector translate = new PVector(-1, -1, 3);
+  translateCube(translate);
 }
 
 
