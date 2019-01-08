@@ -103,28 +103,34 @@ class Mesh {
 
 void drawMesh (Mesh mesh) {
   //Draw points
+  /*
   for (int i = 0; i < mesh.vertices.length; i++) {
    PVector projectedVector = project(PVector.add(mesh.vertices[i], mesh.position), mainCamera);
    stroke(WHITE);
    point(rasterizePoint(projectedVector).x, rasterizePoint(projectedVector).y);
    print("Point: " + str(i) + " " + str(projectedVector.x) + " " + str(projectedVector.y) + "\n");
  }
+ */
  
  fill(BLACK);
  stroke(WHITE);
  //Draw tris
  for (int i = 0; i < mesh.tris.length; i++) {
    
-   PVector projectedVector1 = project(PVector.add(mesh.vertices[mesh.tris[i][0]], mesh.position), mainCamera);
-   PVector projectedVector2 = project(PVector.add(mesh.vertices[mesh.tris[i][1]], mesh.position), mainCamera);
-   PVector projectedVector3 = project(PVector.add(mesh.vertices[mesh.tris[i][2]], mesh.position), mainCamera);
+   float backFaceCheck = PVector.dot(PVector.sub(mesh.vertices[mesh.tris[i][0]], mainCamera.position), calculateNormal(mesh.vertices[mesh.tris[i][0]], mesh.vertices[mesh.tris[i][1]], mesh.vertices[mesh.tris[i][2]]));
    
-   //triangle(rasterizePoint(projectedVector1).x, rasterizePoint(projectedVector1).y, rasterizePoint(projectedVector2).x, rasterizePoint(projectedVector2).y, rasterizePoint(projectedVector3).x, rasterizePoint(projectedVector3).y);
-   
-   line(rasterizePoint(projectedVector1).x, rasterizePoint(projectedVector1).y, rasterizePoint(projectedVector2).x, rasterizePoint(projectedVector2).y);
-   line(rasterizePoint(projectedVector2).x, rasterizePoint(projectedVector2).y, rasterizePoint(projectedVector3).x, rasterizePoint(projectedVector3).y);
-   line(rasterizePoint(projectedVector3).x, rasterizePoint(projectedVector3).y, rasterizePoint(projectedVector1).x, rasterizePoint(projectedVector1).y);
- }
+   if(backFaceCheck <= 0) {
+     PVector projectedVector1 = project(PVector.add(mesh.vertices[mesh.tris[i][0]], mesh.position), mainCamera);
+     PVector projectedVector2 = project(PVector.add(mesh.vertices[mesh.tris[i][1]], mesh.position), mainCamera);
+     PVector projectedVector3 = project(PVector.add(mesh.vertices[mesh.tris[i][2]], mesh.position), mainCamera);
+     
+     //triangle(rasterizePoint(projectedVector1).x, rasterizePoint(projectedVector1).y, rasterizePoint(projectedVector2).x, rasterizePoint(projectedVector2).y, rasterizePoint(projectedVector3).x, rasterizePoint(projectedVector3).y);
+     
+     line(rasterizePoint(projectedVector1).x, rasterizePoint(projectedVector1).y, rasterizePoint(projectedVector2).x, rasterizePoint(projectedVector2).y);
+     line(rasterizePoint(projectedVector2).x, rasterizePoint(projectedVector2).y, rasterizePoint(projectedVector3).x, rasterizePoint(projectedVector3).y);
+     //line(rasterizePoint(projectedVector3).x, rasterizePoint(projectedVector3).y, rasterizePoint(projectedVector1).x, rasterizePoint(projectedVector1).y);
+   }
+  }
 }
 
 
@@ -188,6 +194,14 @@ int[][] cubeTris = {
   {0, 4, 7},
   {7, 3, 0}
 };
+
+PVector calculateNormal(PVector point1, PVector point2, PVector point3) {
+  
+  PVector edge1 = PVector.sub(point2, point1);
+  PVector edge2 = PVector.sub(point3, point1);
+  
+  return edge1.cross(edge2).mult(-1);
+}
 
 
 
