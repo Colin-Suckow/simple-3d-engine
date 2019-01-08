@@ -1,5 +1,5 @@
-int displayWidth = 512;
-int displayHeight = 512;
+int displayWidth = 640;
+int displayHeight = 480;
 
 
 Mesh cube = new Mesh();
@@ -10,14 +10,49 @@ void setup() {
   
   cube.vertices = cubeVertices;
   cube.tris = cubeTris;
-  cube.position = new PVector (1,1,3);
+  cube.position = new PVector (1.5,-1,3);
   
   background(BLACK);
 }
 
 void draw() {
   background(BLACK);
-  cube.rotate(new PVector(3, 3, 3));
+  
+  if (keyPressed) {
+    if (key == 'a') {
+      mainCamera.position.add(new PVector(-0.05, 0, 0));
+    }
+    
+    if (key == 'd') {
+      mainCamera.position.add(new PVector(0.05, 0, 0));
+    }
+    
+    if (key == 'w') {
+      mainCamera.position.add(new PVector(0, 0, 0.05));
+    }
+    
+    if (key == 's') {
+      mainCamera.position.add(new PVector(0, 0, -0.05));
+    }
+    
+    if (key == 'j') {
+      mainCamera.rotation.add(new PVector(0, -0.01, 0));
+    }
+    
+    if (key == 'l') {
+      mainCamera.rotation.add(new PVector(0, 0.01, 0));
+    }
+    
+    if (key == 'i') {
+      mainCamera.rotation.add(new PVector(0.01, 0, 0));
+    }
+    
+    if (key == 'k') {
+      mainCamera.rotation.add(new PVector(-0.01, 0, 0));
+    }
+  }
+  
+  cube.rotate(new PVector(0.5, 0.5, 0.5));
   drawMesh(cube);
 }
 
@@ -69,7 +104,7 @@ class Mesh {
 void drawMesh (Mesh mesh) {
   //Draw points
   for (int i = 0; i < mesh.vertices.length; i++) {
-   PVector projectedVector = project(PVector.add(mesh.vertices[i], mesh.position));
+   PVector projectedVector = project(PVector.add(mesh.vertices[i], mesh.position), mainCamera);
    stroke(WHITE);
    point(rasterizePoint(projectedVector).x, rasterizePoint(projectedVector).y);
    print("Point: " + str(i) + " " + str(projectedVector.x) + " " + str(projectedVector.y) + "\n");
@@ -80,9 +115,9 @@ void drawMesh (Mesh mesh) {
  //Draw tris
  for (int i = 0; i < mesh.tris.length; i++) {
    
-   PVector projectedVector1 = project(PVector.add(mesh.vertices[mesh.tris[i][0]], mesh.position));
-   PVector projectedVector2 = project(PVector.add(mesh.vertices[mesh.tris[i][1]], mesh.position));
-   PVector projectedVector3 = project(PVector.add(mesh.vertices[mesh.tris[i][2]], mesh.position));
+   PVector projectedVector1 = project(PVector.add(mesh.vertices[mesh.tris[i][0]], mesh.position), mainCamera);
+   PVector projectedVector2 = project(PVector.add(mesh.vertices[mesh.tris[i][1]], mesh.position), mainCamera);
+   PVector projectedVector3 = project(PVector.add(mesh.vertices[mesh.tris[i][2]], mesh.position), mainCamera);
    
    //triangle(rasterizePoint(projectedVector1).x, rasterizePoint(projectedVector1).y, rasterizePoint(projectedVector2).x, rasterizePoint(projectedVector2).y, rasterizePoint(projectedVector3).x, rasterizePoint(projectedVector3).y);
    
@@ -94,13 +129,21 @@ void drawMesh (Mesh mesh) {
 
 
 
-PVector project(PVector vertex) {
+PVector project(PVector vertex, Camera cam) {
   
-  float orthoX = vertex.x * (1 / vertex.z);
-  float orthoY = vertex.y * (1 / vertex.z);
-  float orthoZ = 0; //z is not used in this projection
+  float xTransform = vertex.x - cam.position.x;
+  float yTransform = vertex.y - cam.position.y;
+  float zTransform = vertex.z - cam.position.z;
   
-  return new PVector(orthoX, orthoY, orthoZ);
+  //Apply camera transformation matrix
+  float cameraTransformX = cos(cam.rotation.y) * ((sin(cam.rotation.z) * yTransform) + cos(cam.rotation.z) * xTransform) - sin(cam.rotation.y) * zTransform;
+  float cameraTransformY = sin(cam.rotation.x) * ( (cos(cam.rotation.y) * zTransform) + sin(cam.rotation.y) * ( sin(cam.rotation.z) * yTransform + cos(cam.rotation.z) * xTransform) ) + cos(cam.rotation.x) * ( cos(cam.rotation.z) * yTransform - sin(cam.rotation.z) * xTransform);
+  float cameraTransformZ = cos(cam.rotation.x) * ( (cos(cam.rotation.y) * zTransform) + sin(cam.rotation.y) * ( sin(cam.rotation.z) * yTransform + cos(cam.rotation.z) * xTransform) ) - sin(cam.rotation.x) * ( cos(cam.rotation.z) * yTransform - sin(cam.rotation.z) * xTransform);
+  
+  float projectedX = ( cam.displaySurface.z / cameraTransformZ ) * cameraTransformX + cam.displaySurface.x;
+  float projectedY = ( cam.displaySurface.z / cameraTransformZ ) * cameraTransformY + cam.displaySurface.y;
+  
+  return new PVector(projectedX, projectedY, cameraTransformZ);
 }
 
 PVector rasterizePoint(PVector vertex) {
