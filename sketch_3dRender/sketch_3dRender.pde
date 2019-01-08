@@ -2,18 +2,130 @@ int displayWidth = 512;
 int displayHeight = 512;
 
 
-PVector[] vertices = {
-  new PVector(0, 0, 0),
-  new PVector(0, 1, 0),
-  new PVector(1, 1, 0),
-  new PVector(1, 0, 0),
-  new PVector(0, 0, 1),
-  new PVector(0, 1, 1),    
-  new PVector(1, 1, 1),
-  new PVector(1, 0, 1)
+Mesh cube = new Mesh();
+Camera mainCamera = new Camera();
+
+void setup() {
+  size(displayWidth, displayHeight);
+  
+  cube.vertices = cubeVertices;
+  cube.tris = cubeTris;
+  cube.position = new PVector (1,1,3);
+  
+  background(BLACK);
+}
+
+void draw() {
+  background(BLACK);
+  cube.rotate(new PVector(3, 3, 3));
+  drawMesh(cube);
+}
+
+
+
+class Camera {
+  public PVector position = new PVector(0, 0, 0);
+  public PVector rotation = new PVector(0, 0, -1);
+  public PVector displaySurface = new PVector (0, 0, 1);
+}
+
+class Mesh {
+  public PVector[] vertices;
+  public int[][] tris;
+  public PVector position = new PVector(0, 0, 0);
+  
+  public void rotate(PVector rotation) {
+    for(int i = 0; i < vertices.length; i++) {
+      //Place at origin
+      vertices[i].cross(this.position);
+      //X rotation
+      //X does not change
+      vertices[i].y = (vertices[i].y * cos(radians(rotation.x))) + (vertices[i].z * -sin(radians(rotation.x)));
+      vertices[i].z = (vertices[i].y * sin(radians(rotation.x))) + (vertices[i].z * cos(radians(rotation.x)));
+      
+      //Y rotation
+      vertices[i].x = (vertices[i].x * cos(radians(rotation.x))) + (vertices[i].z * sin(radians(rotation.x)));
+      //Y does not change
+      vertices[i].z = (vertices[i].x * -sin(radians(rotation.x))) + (vertices[i].z * cos(radians(rotation.x)));
+      
+      //Z rotation
+      vertices[i].x = (vertices[i].x * cos(radians(rotation.x))) + (vertices[i].y * -sin(radians(rotation.x)));
+      vertices[i].y = (vertices[i].x * sin(radians(rotation.x))) + (vertices[i].y * cos(radians(rotation.x)));
+      //Z does not change
+      
+      //Return to original spot
+      vertices[i].cross(this.position.mult(-1));
+      
+    }
+  }
+  
+}
+
+
+
+
+
+
+void drawMesh (Mesh mesh) {
+  //Draw points
+  for (int i = 0; i < mesh.vertices.length; i++) {
+   PVector projectedVector = project(PVector.add(mesh.vertices[i], mesh.position));
+   stroke(WHITE);
+   point(rasterizePoint(projectedVector).x, rasterizePoint(projectedVector).y);
+   print("Point: " + str(i) + " " + str(projectedVector.x) + " " + str(projectedVector.y) + "\n");
+ }
+ 
+ fill(BLACK);
+ stroke(WHITE);
+ //Draw tris
+ for (int i = 0; i < mesh.tris.length; i++) {
+   
+   PVector projectedVector1 = project(PVector.add(mesh.vertices[mesh.tris[i][0]], mesh.position));
+   PVector projectedVector2 = project(PVector.add(mesh.vertices[mesh.tris[i][1]], mesh.position));
+   PVector projectedVector3 = project(PVector.add(mesh.vertices[mesh.tris[i][2]], mesh.position));
+   
+   //triangle(rasterizePoint(projectedVector1).x, rasterizePoint(projectedVector1).y, rasterizePoint(projectedVector2).x, rasterizePoint(projectedVector2).y, rasterizePoint(projectedVector3).x, rasterizePoint(projectedVector3).y);
+   
+   line(rasterizePoint(projectedVector1).x, rasterizePoint(projectedVector1).y, rasterizePoint(projectedVector2).x, rasterizePoint(projectedVector2).y);
+   line(rasterizePoint(projectedVector2).x, rasterizePoint(projectedVector2).y, rasterizePoint(projectedVector3).x, rasterizePoint(projectedVector3).y);
+   line(rasterizePoint(projectedVector3).x, rasterizePoint(projectedVector3).y, rasterizePoint(projectedVector1).x, rasterizePoint(projectedVector1).y);
+ }
+}
+
+
+
+PVector project(PVector vertex) {
+  
+  float orthoX = vertex.x * (1 / vertex.z);
+  float orthoY = vertex.y * (1 / vertex.z);
+  float orthoZ = 0; //z is not used in this projection
+  
+  return new PVector(orthoX, orthoY, orthoZ);
+}
+
+PVector rasterizePoint(PVector vertex) {
+  
+  float rasterX = vertex.x *((0.5 * displayWidth) + (displayWidth / 2));
+  float rasterY = vertex.y * ((0.5 * displayHeight) + (displayHeight / 2));
+  
+  return new PVector(rasterX, rasterY);
+}
+
+
+
+//Cube data
+PVector[] cubeVertices = {
+  new PVector(-0.5, -0.5, -0.5),
+  new PVector(-0.5, 0.5, -0.5),
+  new PVector(0.5, 0.5, -0.5),
+  new PVector(0.5, -0.5, -0.5),
+  new PVector(-0.5, -0.5, 0.5),
+  new PVector(-0.5, 0.5, 0.5),    
+  new PVector(0.5, 0.5, 0.5),
+  new PVector(0.5, -0.5, 0.5)
 };
 
-int[][] tris = {
+int[][] cubeTris = {
   //south
   {0, 1, 2},
   {2, 3, 0},
@@ -31,93 +143,9 @@ int[][] tris = {
   {6, 2, 1},
   //bottom
   {0, 4, 7},
-  {7, 3, 0},
+  {7, 3, 0}
 };
 
-float vertCount = 0;
-
-void setup() {
-  size(displayWidth, displayHeight);
-  setupTriData();
-  
-  PVector translate = new PVector(-0.5, -0.5, -0.5);
-  translateCube(translate);
-  moveToSpot();
-  background(BLACK);
-}
-
-void draw() {
-  background(BLACK);
-  vertCount += 0.02;
-  moveToOrigin();
-  testRotate();
-  moveToSpot();
-  //translateCube(new PVector( cos(vertCount) * 0.05, sin(vertCount) * 0.05, 0));
-  //Draw points
-  for (int i = 0; i < vertices.length; i++) {
-   PVector projectedVector = project(vertices[i]);
-   stroke(WHITE);
-   point(rasterizePoint(projectedVector).x, rasterizePoint(projectedVector).y);
-   print("Point: " + str(i) + " " + str(projectedVector.x) + " " + str(projectedVector.y) + "\n");
- }
- 
- //Draw tris
- for (int i = 0; i < tris.length; i++) {
-   PVector projectedVector1 = project(vertices[tris[i][0]]);
-   PVector projectedVector2 = project(vertices[tris[i][1]]);
-   PVector projectedVector3 = project(vertices[tris[i][2]]);
-   
-   line(rasterizePoint(projectedVector1).x, rasterizePoint(projectedVector1).y, rasterizePoint(projectedVector2).x, rasterizePoint(projectedVector2).y);
-   line(rasterizePoint(projectedVector2).x, rasterizePoint(projectedVector2).y, rasterizePoint(projectedVector3).x, rasterizePoint(projectedVector3).y);
-   line(rasterizePoint(projectedVector3).x, rasterizePoint(projectedVector3).y, rasterizePoint(projectedVector1).x, rasterizePoint(projectedVector1).y);
- }
-}
-
-
-void setupTriData() {
-  //TODO
-}
-
-void testRotate() {
-  float theta = radians(0.5);
-  for (int i = 0; i < vertices.length; i++) {
-    vertices[i].y = (vertices[i].x * sin(theta)) + (vertices[i].y * cos(theta));
-    vertices[i].x = (vertices[i].x * cos(theta)) - (vertices[i].y * sin(theta));
-  }
-}
-
-PVector project(PVector vertex) {
-  
-  float orthoX = vertex.x * (1 / vertex.z);
-  float orthoY = vertex.y * (1 / vertex.z);
-  float orthoZ = 0; //z is not used in this projection
-  
-  return new PVector(orthoX, orthoY, orthoZ);
-}
-
-PVector rasterizePoint(PVector vertex) {
-  
-  float rasterX = vertex.x * (0.5 * displayWidth) + (displayWidth / 2);
-  float rasterY = vertex.y * (0.5 * displayHeight) + (displayHeight / 2);
-  
-  return new PVector(rasterX, rasterY);
-}
-
-void translateCube(PVector vector) {
-  for (int i = 0; i < vertices.length; i++) {
-    vertices[i].add(vector);
-  }
-}
-
-void moveToOrigin() {
-  PVector translate = new PVector(1, 1, -3);
-  translateCube(translate);
-}
-
-void moveToSpot() {
-  PVector translate = new PVector(-1, -1, 3);
-  translateCube(translate);
-}
 
 
 //Color definitions
